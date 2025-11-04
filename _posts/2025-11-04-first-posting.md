@@ -6,4 +6,4 @@ categories: About
 
 # 안녕하세요
 
-![mydog](../images\2025-11-04-first-posting\mydog.jpg)
+![mydog](../images/2025-11-04-first-posting/mydog.jpg)

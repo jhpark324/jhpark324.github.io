@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "첫번 째 게시글입니다."
+categories: About
 ---
 
 # 안녕하세요

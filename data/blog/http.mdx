@@ -1,0 +1,263 @@
+---
+title: 'HTTP 이해'
+date: '2026-03-03'
+lastmod: '2026-03-03'
+tags:
+  - CS
+draft: false
+summary: 'HTTP 이해하기'
+images:
+  - /static/images/canada/mountains.jpg
+  - /static/images/canada/toronto.jpg
+---
+
+## HTTP
+
+<TOCInline toc={props.toc} exclude="HTTP" />
+
+## HTTP (Hypertext Transfer Protocol)
+
+HTTP는 웹 브라우저와 웹 서버가 서로 데이터를 주고받기 위해 사용하는 프로토콜이다.
+
+---
+
+### 작동 방식
+
+1. DNS 조회: 브라우저가 도메인 네임을 IP주소로 변환
+2. TCP 연결: HTTP는 전송 계층 프로토콜인 TCP(HTTP/3은 UDP) 위에서 동작하기에 데이터를 주고 받기 전,
+클라이언트와 서버가 서로 연결을 확인하는 과정을 거침 
+3. HTTP 요청 메세지 전송: 연결이 수립되면 클라이언트는 규격에 맞는 요청 메세지를 생성하여 서버로 보냄
+4. 서버 프로세싱: 서버는 요청을 해석하고, 데이터베이스 조회나 로직 처리를 수행
+5. HTTP 응답 메세지 수신: 처리가 완료되면 서버는 결과값과 상태 코드를 담은 응답 메시지를 클라이언트에 보냄
+6. 연결 종료: 데이터 전송이 끝나면 연결을 종료
+
+---
+
+#### DNS 조회
+
+**DNS 조회의 핵심은 사람이 읽기 쉬운 도메인 이름을 논리적 주소인 네트워크 IP주소로 변환하는 과정**
+
+1. 브라우저 캐시 확인: 가장 먼저 브라우저와 운영체제(OS)의 로컬 캐시에 해당 도메인의 IP 정보가 있는지 확인. 있다면 바로 접속
+2. DNS 리커시브 리졸버(Recursive Resolver) 요청: 캐시에 없다면, 통신사(ISP)가 제공하는 리졸버 서버로 요청. 이 서버는 IP를 찾을 때까지 다른 서버들을 대신 방문하는 '심부름꾼' 역할을 함
+3. 루트 네임 서버(Root Name Server) 질의: 리졸버는 루트 서버에 "www.naver.com의 IP를 아는가?"라고 질문. 루트 서버는 "나는 모른다. 하지만 .com을 담당하는 서버 주소는 알려줄 수 있다"고 답함
+4. TLD 네임 서버(Top-Level Domain Name Server) 질의: 리졸버는 .com을 담당하는 TLD 서버에 다시 질문. TLD 서버는 "나는 모른다. 하지만 naver.com을 담당하는 서버 주소는 알려줄 수 있다"고 답함
+5. 권한 있는 네임 서버(Authoritative Name Server) 질의: 리졸버는 최종적으로 naver.com의 권한 있는 네임 서버에 질문. 이 서버는 실제 IP 주소"(예: 125.209.222.141)를 가지고 있으며, 이를 리졸버에게 전달
+6. 응답 및 캐싱: 리졸버는 받은 IP 주소를 브라우저와 자신의 캐시에 저장한 후, 브라우저에 전달. 브라우저는 이 IP를 이용해 웹 서버에 직접 접속
+7. 브라우저 접속: 브라우저는 IP 주소를 이용해 웹 서버에 직접 접속하여 HTTP 통신 시작
+
+---
+
+#### TCP 연결
+
+**TCP(Transmission Control Protocol) 연결은 데이터를 보내기 전, 양쪽 장치가 서로 통신할 준비가 되었는지 확인하고 신뢰할 수 있는 통신 통로를 만드는 과정**
+
+TCP 통신은 시퀀스 번호를 부여하여 데이터의 순서를 제어합니다
+
+##### 연결 설정: 3-way handshake
+
+1. SYN (Synchronize) / Client -> Server:
+    - 클라이언트 `CLOSE` -> `SYN_SENT`
+    - 서버 `LISTEN`
+    - 클라이언트가 시퀀스 번호를 생성하여 패킷 헤더에 담아 보냄
+2. SYN-ACK (Synchronize-Acknowledge) / Server -> Client:
+    - 서버 `SYN_RECEIVED`
+    - 서버도 자신의 시퀀스 번호를 생성하고 클라이언트의 시퀀스 번호에 1을 더한 값을 ACK로 담아 보냄
+3. ACK (Acknowledge) / Client -> Server: 
+    - 클라이언트 `ESTABLISHED`
+    - 서버 `SYN_RECEIVED` -> `ESTABLISHED`
+    - 클라이언트는 서버의 시퀀스 번호에 1을 더한 값을 ACK로 담아 보냄
+
+##### 연결 종료: 4-way handshake
+
+1. FIN (Finish) / Client -> Server: 
+    - 클라이언트 `ESTABLISHED` -> `FIN_WAIT_1`
+    - 서버 `ESTABLISHED` -> `CLOSE_WAIT`
+    - 클라이언트가 연결 종료를 요청
+2. ACK (Acknowledge) / Server -> Client: 
+    - 서버 `CLOSE_WAIT`
+    - 클라이언트 `FIN_WAIT_1` -> `FIN_WAIT_2`
+    - 종료 확인 후 서버에서 남은 데이터를 모두 전송
+3. FIN (Finish) / Server -> Client: 
+    - 서버 `CLOSE_WAIT` -> `LAST_ACK`
+    - 클라이언트 `FIN_WAIT_2` -> `TIME_WAIT`
+    - 서버가 연결 종료를 요청
+4. ACK (Acknowledge) / Client -> Server: 
+    - 클라이언트 `TIME_WAIT` -> `CLOSED`
+    - 서버 `LAST_ACK` -> `CLOSED`
+    - 클라이언트가 연결 종료를 확인
+
+##### HTTP/1.0, 1.1
+
+- 1.0: 
+    - 한 번의 요청과 응답마다 TCP 연결을 새로 맺고 끊음 
+- 1.1:
+    - 한 번 맺은 TCP 연결을 재사용하여 여러 요청과 응답을 처리 (Connection: keep-alive)
+    - 파이프라이닝: 응답을 기다리지 않고 여러 요청을 연속으로 보냄
+    - 응답은 반드시 요청한 순서대로 와야함
+
+##### HTTP/2
+
+- 멀티플렉싱: 하나의 TCP 연결에서 여러 요청과 응답을 프레임 단위로 쪼개서 보냄, 순서 상관 없음
+- 헤더 압축: 헤더 정보를 압축하여 전송
+- 서버 푸시: 클라이언트가 요청하지 않은 리소스를 미리 전송
+
+##### HTTP/3
+
+- QUIC: UDP 기반의 전송 계층 프로토콜
+- 0-RTT: 0-RTT(Zero Round Trip Time)는 연결 설정과 데이터 전송을 한 번에 처리하여 지연 시간을 줄이는 기술
+- 네트워크 전환에 강함: 모바일 환경에서 Wi-Fi와 LTE 간 전환 시 연결이 끊기지 않고 유지됨
+
+---
+
+
+#### HTTP 요청 메세지 전송
+
+**request**
+
+    1. Start-line: 
+        - HTTP 메서드: GET, POST, PUT, DELETE, PATCH 등
+        - 요청 대상 (URL/Path): /api/v1/*
+        - HTTP 버전: HTTP/1.1, HTTP/2, HTTP/3
+    2. Header: 요청에 대한 추가 정보
+        - Host: 요청을 받는 서버의 도메인(ex: naver.com)
+        - User-Agent: 요청을 보내는 클라이언트의 정보(ex: Chrome, Safari 등)
+        - Content-Type: Body에 담긴 데이터의 형식 (ex: application/json, text/html 등)
+        - Authorization: 인증 정보 (ex: JWT 등)
+    3. Empty Line: 헤더와 바디를 구분하는 빈 줄
+    4. Body: 요청에 대한 데이터
+        - 보통의 경우
+            - GET, DELETE: 없음
+            - POST, PUT, PATCH: 있음
+
+---
+
+#### 서버 프로세싱
+
+**요청을 받고 응답을 생성하는 과정**
+
+1. 요청 해석
+2. 비즈니스 로직 수행
+3. 응답 생성
+
+---
+
+#### HTTP 응답 메세지 수신
+
+**response**
+
+    1. Status-line: 
+        - HTTP 버전: HTTP/1.1, HTTP/2, HTTP/3
+        - 상태 코드: 200, 404, 500 등
+        - 상태 메시지: OK, Not Found, Internal Server Error 등
+    2. Header: 응답에 대한 추가 정보
+        - Content-Type: Body에 담긴 데이터의 형식 (ex: application/json, text/html 등)
+        - Content-Length: Body의 길이
+        - Set-Cookie: 쿠키 정보
+        - Location: 리다이렉트 대상 URL
+    3. Empty Line: 헤더와 바디를 구분하는 빈 줄
+    4. Body: 응답에 대한 데이터
+        - 보통의 경우
+            - DELETE: 없음
+            - GET, POST, PUT, PATCH: 있음
+
+---
+
+#### 상태코드
+
+**1xx: 정보 응답**
+
+- 100 Continue: 요청의 첫 번째 부분(헤더)을 수신했으며, 클라이언트가 나머지 부분을 계속 전송해도 좋다는 의미
+- 101 Switching Protocols: 클라이언트가 요청한 프로토콜(ex: WebSocket)로 업그레이드하겠다는 의미
+
+**2xx: 성공 응답**
+
+- 200 OK: 요청이 성공적으로 처리되었음
+- 201 Created: 리소스가 성공적으로 생성되었음
+- 202 Accepted: 요청이 접수되었으나 처리는 완료되지 않았음
+- 204 No Content: 요청이 성공적으로 처리되었으나 반환할 데이터가 없음
+
+**3xx: 리다이렉션 응답**
+
+- 301 Moved Permanently: 리소스의 위치가 영구적으로 변경되었음
+- 302 Found: 리소스의 위치가 일시적으로 변경되었음
+- 304 Not Modified: 클라이언트가 캐시한 리소스가 변경되지 않았음
+- 307 Temporary Redirect: 리소스의 위치가 일시적으로 변경되었으며, 동일한 HTTP 메서드를 사용해야 함
+
+**4xx: 클라이언트 오류 응답**
+
+- 400 Bad Request: 요청이 잘못되었음
+- 401 Unauthorized: 인증이 필요함
+- 403 Forbidden: 요청이 거부되었음
+- 404 Not Found: 리소스를 찾을 수 없음
+- 405 Method Not Allowed: 허용되지 않는 HTTP 메서드
+- 409 Conflict: 요청이 현재 리소스의 상태와 충돌함
+- 410 Gone: 리소스가 영구적으로 삭제되었음
+- 413 Payload Too Large: 요청 본문이 너무 큼
+- 415 Unsupported Media Type: 지원하지 않는 미디어 타입
+- 429 Too Many Requests: 요청이 너무 많음
+
+**5xx: 서버 오류 응답**
+
+- 500 Internal Server Error: 서버 오류
+- 501 Not Implemented: 서버가 요청을 처리할 수 없음
+- 502 Bad Gateway: 게이트웨이 오류
+- 503 Service Unavailable: 서비스를 사용할 수 없음
+- 504 Gateway Timeout: 게이트웨이 시간 초과
+- 505 HTTP Version Not Supported: HTTP 버전이 지원되지 않음
+
+## 꼬리물기 질문
+
+1. HTTP/1.1 keep-alive가 백엔드 서버 자원(커넥션, 스레드, FD)에 주는 영향은 무엇인가?
+    - 매 요청마다 TCP/TLS 핸드셰이크를 안 해서 지연과 CPU 사용이 줄어듬
+    - 연결을 오래 잡고 있어서 FD(소켓), 커넥션 버퍼 메모리를 계속 먹음
+    - FASTAPI 경우에는 비동기 처리로 인해 이벤트 발생시만 CPU를 점유하기에 대처 가능
+2. API에서 GET /users와 POST /users를 설계할 때 멱등성(idempotency)을 어떻게 고려했나?
+    - GET은 멱등성을 보장하지만 POST는 멱등성을 보장하지 않음
+    - POST에서 멱등성을 보장하기 위해 UNIQUE 제약 조건을 걸어두거나 토큰을 사용
+3. 400, 401, 403, 404를 어떤 기준으로 나눠서 응답할 건가?
+    - 400: 요청 데이터가 잘못되었을 때
+    - 401: 인증이 필요할 때
+    - 403: 권한이 없을 때
+    - 404: 리소스를 찾을 수 없을 때
+4. PUT과 PATCH 차이를 실제 업데이트 API 예시로 설명해봐라.
+    - PUT: 전체 리소스를 교체 (멱등성 보장)
+    - PATCH: 리소스의 일부를 수정 (멱등성 보장하지 않음)
+5. Content-Type과 Accept 헤더를 둘 다 검사해야 하는 이유는?
+    - Content-Type: 요청 본문의 데이터 형식을 지정
+    - Accept: 응답 본문의 데이터 형식을 지정
+    - 클라이언트가 원하는 데이터 형식을 서버가 지원하지 않을 경우 415 에러를 반환
+    - 서버가 지원하지 않는 데이터 형식을 클라이언트가 요청할 경우 406 에러를 반환
+6. 쿠키 기반 인증에서 HttpOnly, Secure, SameSite를 각각 왜 설정하나?
+    - HttpOnly: 쿠키에 접근할 수 있는 범위를 제한하여 XSS 공격으로부터 쿠키를 보호
+    - Secure: HTTPS 연결에서만 쿠키를 전송하여 중간자 공격으로부터 쿠키를 보호
+    - SameSite: 쿠키가 전송되는 범위를 제한하여 CSRF 공격으로부터 쿠키를 보호
+7. JWT 인증 API에서 401과 403을 토큰 만료/권한 부족 케이스로 어떻게 구분할 건가?
+    - 401: 토큰 만료
+    - 403: 권한 부족
+8. 트래픽이 늘 때 429를 어떤 기준(사용자, IP, 토큰)으로 제한할지 설계해봐라.
+    - 사용자: 로그인한 사용자
+    - IP: IP 주소
+    - 토큰: JWT 토큰
+9. API timeout은 어디(클라이언트, LB, 앱, DB)에서 어떻게 맞춰야 하나?
+    - Client > LB > App > DB 순으로 타임아웃을 설정
+10. 장애 상황에서 500/502/503/504를 로그와 모니터링 관점에서 어떻게 해석하나?
+    - 500: 서버 내부 오류
+    - 502: 게이트웨이 오류
+    - 503: 서비스 사용 불가
+    - 504: 게이트웨이 시간 초과
+11. HTTP 요청 하나가 느릴 때 DNS/TCP/TLS/앱 처리 중 병목을 어떻게 분리 진단할 건가?
+    - DNS: dig, nslookup
+    - TCP: ping, telnet
+    - TLS: openssl s_client
+    - App: 서버 로그의 Processing Time과 DB 쿼리 시간
+12. 로그인 API를 POST로 두는 이유와 GET으로 두면 생길 수 있는 문제는?
+    - GET: URL에 ID, PW가 노출됨
+    - POST: URL에 ID, PW가 노출되지 않음
+13. REST에서 리소스 URL 설계(users/123/orders)를 어떻게 잡고 왜 그렇게 했나?
+    - users/123/orders: 123번 유저의 주문 목록
+    - orders/123/users: 123번 주문의 유저
+14. API 버저닝(/v1)과 하위 호환성 전략을 주니어 관점에서 어떻게 가져갈 건가?
+    - /v1, /v2, /v3 ...
+    - 기존 클라이언트가 죽지 않고 점진적으로 이전을 유도
+15. “동작은 되는데 응답 포맷이 매번 달라지는 API”가 왜 팀 생산성을 떨어뜨리는지 설명해봐라.
+    - 프론트엔드 개발자가 API 명세를 보고 개발을 했는데, 실제 응답 포맷이 다르면 디버깅이 어려워지고, 매번 분기 처리를 해야하므로 생산성 하락

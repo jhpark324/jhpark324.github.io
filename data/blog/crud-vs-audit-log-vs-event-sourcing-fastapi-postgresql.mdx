@@ -1,0 +1,456 @@
+﻿---
+title: 'FastAPI + PostgreSQL에서 CRUD, Audit Log, Event Sourcing 비교하기'
+date: '2026-03-11'
+tags: ['architecture', 'fastapi', 'postgresql', 'audit-log', 'event-sourcing']
+draft: true
+summary: '포인트 시스템 예제로 CRUD, CRUD + Audit Log, Event Sourcing을 비교하고 각각의 트레이드오프와 선택 기준을 정리했다.'
+---
+
+이벤트 소싱을 처음 접하면 가장 먼저 드는 생각이 있다.
+
+> 그냥 테이블에 현재 상태만 저장하면 안 되나?
+
+실제로 대부분의 서비스는 `CRUD`만으로도 충분하다.
+문제는 모든 도메인이 "현재 상태"만으로 설명되지 않는다는 점이다.
+
+예를 들어 포인트 시스템을 생각해보자.
+현재 잔액만 알면 되는가, 아니면 아래 질문에도 답할 수 있어야 하는가?
+
+- 잔액이 왜 이렇게 되었는가?
+- 언제 어떤 이유로 적립/차감되었는가?
+- 어제 오후 3시 시점의 잔액은 얼마였는가?
+- 잘못 반영된 변경을 어떻게 추적할 것인가?
+
+이 질문들에 답하려면 `CRUD`, `CRUD + Audit Log`, `Event Sourcing`은 서로 다른 선택지가 된다.
+이 글에서는 `FastAPI + PostgreSQL` 기준으로 세 방식을 같은 요구사항 위에서 비교해보려고 한다.
+
+## 비교에 사용할 요구사항
+
+포인트 계정 도메인에 아래 요구사항이 있다고 가정하자.
+
+1. 포인트를 적립할 수 있어야 한다.
+2. 포인트를 사용할 수 있어야 한다.
+3. 현재 잔액을 빠르게 조회할 수 있어야 한다.
+4. 변경 이력을 확인할 수 있어야 한다.
+5. 필요하다면 특정 시점 상태를 복원할 수 있으면 좋다.
+
+이 요구사항을 만족하는 방식은 여러 가지가 있지만, 여기서는 세 가지를 비교한다.
+
+- `CRUD`
+- `CRUD + Audit Log`
+- `Event Sourcing`
+
+## 1. CRUD: 현재 상태를 원본으로 저장하는 방식
+
+가장 단순한 방법은 현재 잔액을 테이블에 직접 저장하는 것이다.
+
+```sql
+create table point_accounts (
+  account_id uuid primary key, -- 포인트 계정 ID
+  balance integer not null, -- 현재 잔액
+  updated_at timestamptz not null default now() -- 마지막 수정 시각
+);
+```
+
+API도 단순하다.
+
+```python
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter()
+
+
+class EarnPointsRequest(BaseModel):
+    # 적립할 포인트 양
+    amount: int
+
+
+@router.post('/accounts/{account_id}/earn')
+async def earn_points(account_id: str, body: EarnPointsRequest):
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail='amount must be positive')
+
+    # 실제 구현에서는 DB에서 현재 계정을 조회한다.
+    account = {'account_id': account_id, 'balance': 1200}
+
+    # 현재 잔액을 바로 수정한다.
+    new_balance = account['balance'] + body.amount
+
+    # update point_accounts set balance = new_balance ...
+    return {
+        'account_id': account_id,
+        'balance': new_balance,
+    }
+```
+
+이 방식의 장점은 분명하다.
+
+- 구현이 가장 단순하다.
+- 현재 상태 조회가 빠르다.
+- 팀원 대부분이 쉽게 이해할 수 있다.
+- 트랜잭션 설계가 비교적 쉽다.
+
+하지만 한계도 분명하다.
+
+- 잔액이 왜 바뀌었는지 기본적으로 남지 않는다.
+- 이력을 남기려면 나중에 별도 기능을 덧붙여야 한다.
+- 특정 시점 상태 복원이 어렵다.
+- `balance = 1200`만으로는 비즈니스 맥락이 없다.
+
+즉, `CRUD`는 "현재 상태만 정확하면 되는가"라는 질문에 가장 잘 맞는다.
+
+## 2. CRUD + Audit Log: 현재 상태는 유지하고, 변경 이력은 따로 남기는 방식
+
+실무에서 가장 현실적인 중간 지점은 이 방식이다.
+원본 테이블은 그대로 두되, 상태가 바뀔 때마다 감사 로그를 별도 테이블에 남긴다.
+
+```sql
+create table point_accounts (
+  account_id uuid primary key, -- 포인트 계정 ID
+  balance integer not null, -- 현재 잔액
+  updated_at timestamptz not null default now() -- 마지막 수정 시각
+);
+
+create table point_audit_logs (
+  id bigserial primary key, -- 감사 로그의 내부 키
+  account_id uuid not null, -- 어떤 계정에서 발생한 변경인지 나타낸다
+  action text not null, -- 적립, 차감 같은 행위 이름
+  amount integer not null, -- 이번 변경으로 영향을 준 포인트 양
+  balance_after integer not null, -- 변경 후 잔액
+  reason text, -- 변경 사유
+  created_at timestamptz not null default now() -- 로그 기록 시각
+);
+```
+
+애플리케이션에서는 같은 트랜잭션 안에서 두 작업을 처리하면 된다.
+
+```python
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter()
+
+
+class EarnPointsRequest(BaseModel):
+    # 적립할 포인트 양
+    amount: int
+    # 적립 사유
+    reason: str
+
+
+@router.post('/accounts/{account_id}/earn')
+async def earn_points(account_id: str, body: EarnPointsRequest):
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail='amount must be positive')
+
+    # 실제 구현에서는 트랜잭션 안에서 현재 계정을 조회한다.
+    account = {'account_id': account_id, 'balance': 1200}
+    new_balance = account['balance'] + body.amount
+
+    # 1. 현재 상태를 업데이트한다.
+    # update point_accounts set balance = new_balance ...
+
+    # 2. 왜 바뀌었는지 감사 로그를 남긴다.
+    audit_log = {
+        'account_id': account_id,
+        'action': 'POINTS_EARNED',
+        'amount': body.amount,
+        'balance_after': new_balance,
+        'reason': body.reason,
+    }
+
+    # insert into point_audit_logs ...
+    return {
+        'account_id': account_id,
+        'balance': new_balance,
+        'audit_log': audit_log,
+    }
+```
+
+이 방식은 `CRUD`보다 훨씬 실용적이다.
+
+- 현재 상태 조회는 여전히 빠르다.
+- 변경 이력과 사유를 남길 수 있다.
+- 운영자가 문제를 추적하기 쉬워진다.
+- 기존 CRUD 시스템에 비교적 무리 없이 추가할 수 있다.
+
+하지만 여전히 한계는 있다.
+
+- 진실의 원천은 여전히 `point_accounts`다.
+- 감사 로그가 상태 변경과 항상 같은 수준으로 관리되지 않으면 누락되거나 의미가 흐려질 수 있다.
+- 일부 시점은 추적할 수 있어도, 과거 상태 복원의 원본 모델로 쓰기에는 부자연스럽다.
+- 로그가 있어도 이벤트 간 인과관계가 약할 수 있다.
+
+즉, `CRUD + Audit Log`는 "현재 상태가 중요하지만, 이력도 어느 정도 필요하다"는 상황에 잘 맞는다.
+
+## 3. Event Sourcing: 사건 자체를 원본으로 저장하는 방식
+
+Event Sourcing은 접근이 완전히 다르다.
+현재 잔액을 원본으로 저장하지 않고, 잔액을 만들어낸 사건들을 원본으로 저장한다.
+
+예를 들면 이런 이벤트가 있다.
+
+- `PointAccountOpened`
+- `PointsEarned`
+- `PointsSpent`
+
+PostgreSQL에는 보통 이런 식의 이벤트 저장소를 만든다.
+
+```sql
+create table events (
+  id bigserial primary key, -- 이벤트 저장 순서를 위한 내부 키
+  stream_id uuid not null, -- 하나의 계정을 식별하는 stream ID
+  stream_type text not null, -- 어떤 종류의 aggregate인지 구분
+  version integer not null, -- 낙관적 락을 위한 이벤트 버전
+  event_type text not null, -- 발생한 도메인 이벤트 이름
+  payload jsonb not null, -- 이벤트 본문 데이터
+  occurred_at timestamptz not null default now(), -- 이벤트가 기록된 시각
+  unique (stream_id, version)
+);
+```
+
+쓰기 흐름도 "현재 상태 update"가 아니라 "새 이벤트 append"가 중심이 된다.
+
+```python
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter()
+
+
+class EarnPointsRequest(BaseModel):
+    # 적립할 포인트 양
+    amount: int
+    # 적립 사유
+    reason: str
+    # 클라이언트가 알고 있는 마지막 이벤트 버전
+    expected_version: int
+
+
+@router.post('/accounts/{account_id}/earn')
+async def earn_points(account_id: str, body: EarnPointsRequest):
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail='amount must be positive')
+
+    # 실제 구현에서는 stream의 마지막 이벤트 버전을 조회한다.
+    last_version = 3
+
+    # 다른 요청이 먼저 반영되었다면 충돌로 본다.
+    if last_version != body.expected_version:
+        raise HTTPException(status_code=409, detail='version conflict')
+
+    # 현재 상태를 덮어쓰지 않고 새 사건만 추가한다.
+    event = {
+        'stream_id': account_id,
+        'stream_type': 'point-account',
+        'version': last_version + 1,
+        'event_type': 'PointsEarned',
+        'payload': {
+            'amount': body.amount,
+            'reason': body.reason,
+        },
+    }
+
+    # insert into events ...
+    return {'event': event}
+```
+
+여기서 `expected_version`은 사용자가 임의로 넣는 값이 아니다.
+보통은 직전 조회 응답이나 이전 이벤트 append 결과에서 받은 최신 버전 값을 다시 보내고, 서버는 이 값을 기준으로 낙관적 락을 수행한다.
+
+현재 잔액은 이벤트를 재생해서 계산하거나, 보통은 projection 테이블로 따로 유지한다.
+
+```python
+from dataclasses import dataclass
+
+
+@dataclass
+class Event:
+    # 이벤트 이름으로 어떤 상태 전이가 일어나는지 결정한다.
+    event_type: str
+    # 이벤트별 상세 데이터다.
+    payload: dict
+
+
+def replay_balance(events: list[Event]) -> int:
+    # replay 시작 시 기본 잔액
+    balance = 0
+
+    for event in events:
+        if event.event_type == 'PointAccountOpened':
+            # 계정 생성 시 잔액은 0에서 시작한다.
+            balance = 0
+        elif event.event_type == 'PointsEarned':
+            # 적립 이벤트면 잔액을 증가시킨다.
+            balance += event.payload['amount']
+        elif event.event_type == 'PointsSpent':
+            # 사용 이벤트면 잔액을 차감한다.
+            balance -= event.payload['amount']
+
+    return balance
+```
+
+이 방식의 장점은 매우 강력하다.
+
+- 이력이 기본적으로 보존된다.
+- 특정 시점 상태 재구성이 가능하다.
+- 변경의 이유와 순서가 도메인 언어로 남는다.
+- 여러 projection을 만들기 좋다.
+- 외부 시스템 연동과 이벤트 발행이 자연스럽다.
+
+하지만 비용도 가장 크다.
+
+- 구현 복잡도가 높다.
+- projection, replay, snapshot 개념이 필요하다.
+- 읽기 모델을 따로 운영해야 할 수 있다.
+- eventual consistency를 받아들여야 할 수 있다.
+- 이벤트 스키마 진화가 어렵다.
+
+즉, Event Sourcing은 "상태 변화 과정 자체가 핵심 비즈니스 데이터인가"라는 질문에 답하는 방식이다.
+
+## Event Sourcing이 항상 느린 것은 아닌 이유
+
+여기까지 보면 자연스럽게 이런 의문이 든다.
+
+> 이벤트를 저장해두고 나중에 replay한다면, 현재 상태를 구할 때마다 너무 많은 연산이 일어나는 것 아닌가?
+
+맞는 지적이다.
+그래서 실무에서는 보통 매번 모든 이벤트를 처음부터 다시 계산하지 않는다.
+대신 `projection`과 `snapshot`을 함께 사용한다.
+
+### Projection: 조회를 빠르게 하기 위한 읽기 모델
+
+projection은 이벤트를 바탕으로 미리 계산해둔 조회용 데이터다.
+예를 들어 포인트 계정의 현재 잔액은 이런 테이블로 따로 유지할 수 있다.
+
+```sql
+create table account_balance_view (
+  account_id uuid primary key, -- 조회 대상 계정 ID
+  balance integer not null, -- 현재 계산된 잔액
+  updated_at timestamptz not null default now() -- 마지막 갱신 시각
+);
+```
+
+이벤트가 하나 추가될 때마다 이 읽기 모델도 같이 갱신하면, 사용자는 잔액 조회 시 이벤트 전체를 replay할 필요가 없다.
+
+- 원본 데이터는 여전히 `events`
+- 빠른 조회는 `account_balance_view`
+
+즉, `projection`은 `조회 최적화`를 위한 장치다.
+
+### Snapshot: 긴 stream의 replay를 줄이기 위한 중간 상태 저장
+
+snapshot은 특정 시점의 aggregate 상태를 저장해두는 것이다.
+예를 들어 500번째 이벤트까지 반영한 잔액을 저장해두면, 다음에는 1번부터 500번까지 다시 읽지 않고 그 이후 이벤트만 적용하면 된다.
+
+```sql
+create table snapshots (
+  stream_id uuid not null, -- 어떤 계정의 snapshot인지 나타낸다
+  version integer not null, -- 몇 번째 이벤트까지 반영했는지 기록한다
+  state jsonb not null, -- 그 시점의 aggregate 상태
+  created_at timestamptz not null default now(), -- snapshot 생성 시각
+  primary key (stream_id, version)
+);
+```
+
+예를 들어 `state`에는 이런 값이 들어갈 수 있다.
+
+```jsonc
+{
+  // 이 시점까지 계산한 현재 잔액
+  "balance": 12400
+}
+```
+
+즉, `snapshot`은 `replay 최적화`를 위한 장치다.
+
+### 한 줄로 정리하면
+
+- `Projection`: 사용자 조회를 빠르게 하기 위한 읽기 모델
+- `Snapshot`: 상태 복원을 빠르게 하기 위한 중간 저장 상태
+
+Event Sourcing은 단순히 "이벤트를 쌓고 매번 다 다시 읽는 구조"가 아니다.
+실무에서는 `events`를 진실의 원천으로 두고, `projection`과 `snapshot`으로 성능과 운영성을 보완한다.
+
+## 세 방식의 트레이드오프 비교
+
+| 항목 | CRUD | CRUD + Audit Log | Event Sourcing |
+| --- | --- | --- | --- |
+| 구현 난이도 | 가장 낮음 | 중간 | 가장 높음 |
+| 현재 상태 조회 | 가장 쉬움 | 쉬움 | projection이 사실상 필요함 |
+| 변경 이력 추적 | 약함 | 중간 이상 | 매우 강함 |
+| 특정 시점 복원 | 어려움 | 제한적 | 강함 |
+| 비즈니스 의미 보존 | 약함 | 중간 | 매우 강함 |
+| 운영 복잡도 | 낮음 | 중간 | 높음 |
+| 팀 학습 비용 | 낮음 | 중간 | 높음 |
+
+정리하면 이런 그림이다.
+
+- `CRUD`는 가장 단순하고 빠르다.
+- `CRUD + Audit Log`는 실무적으로 가장 균형이 좋다.
+- `Event Sourcing`은 가장 강력하지만, 가장 비싸다.
+
+## 그래서 무엇을 선택해야 할까
+
+내 기준으로는 기본값이 `Event Sourcing`이어서는 안 된다.
+대부분의 서비스는 아래 순서로 생각하는 편이 낫다.
+
+1. 정말 현재 상태만 정확하면 되는가?
+2. 변경 이력과 사유가 운영상 중요한가?
+3. 과거 시점 복원과 상태 전이의 설명 가능성이 핵심인가?
+
+이 질문에 따라 선택을 나누면 다음과 같다.
+
+### CRUD가 맞는 경우
+
+- 게시글, 프로필, 설정 같은 단순 데이터
+- 내부 운영 도구
+- 작은 팀이 빠르게 제품을 만들어야 하는 경우
+- 현재 상태 외의 맥락이 크게 중요하지 않은 경우
+
+### CRUD + Audit Log가 맞는 경우
+
+- 운영 중 변경 추적이 필요한 경우
+- 누가 언제 무엇을 바꿨는지 남겨야 하는 경우
+- 규제나 감사 대응이 조금은 필요한 경우
+- 기존 CRUD 구조를 유지하면서 이력성을 강화하고 싶은 경우
+
+### Event Sourcing이 맞는 경우
+
+- 포인트, 정산, 결제, 원장(ledger) 성격의 도메인
+- 주문 상태 전이처럼 과정 자체가 중요한 도메인
+- 여러 읽기 모델을 이벤트에서 파생해야 하는 경우
+- 과거 상태 재생성과 감사 가능성이 핵심인 경우
+
+## FastAPI + PostgreSQL 기준으로 내 결론
+
+`FastAPI + PostgreSQL` 조합에서는 보통 아래 선택이 가장 현실적이라고 본다.
+
+- 대부분의 기능은 `CRUD`
+- 이력이 필요한 도메인은 `CRUD + Audit Log`
+- 정말 상태 전이 자체가 핵심인 일부 도메인만 `Event Sourcing`
+
+즉, 세 방식은 경쟁 관계라기보다 도메인에 따라 선택하는 도구에 가깝다.
+무조건 Event Sourcing으로 가는 것이 성숙한 설계는 아니다.
+오히려 어떤 문제를 풀고 싶은지 분명할수록 더 좋은 선택을 할 수 있다.
+
+## 마무리
+
+`CRUD`는 현재 상태 중심의 모델이고, `Event Sourcing`은 상태를 만든 사건 중심의 모델이다.
+그리고 `CRUD + Audit Log`는 그 사이에서 실무적으로 가장 자주 쓰이는 절충안이다.
+
+중요한 것은 "어떤 패턴이 더 멋진가"가 아니라, 내 도메인에서 무엇을 원본 데이터로 다뤄야 하는가다.
+포인트 시스템처럼 이력과 순서, 사유가 중요한 도메인이라면 Event Sourcing이 설득력 있다.
+반면 단순한 서비스라면 CRUD가 더 좋은 설계일 수도 있다.
+
+다음 글에서는 이 비교를 바탕으로 `FastAPI + PostgreSQL`에서 `CRUD + Audit Log`를 먼저 구현해보고, 이후 Event Sourcing으로 어떻게 확장할 수 있는지 정리해보려고 한다.
+
+## 참고 자료
+
+- [Martin Fowler - Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)
+- [Microsoft Learn - CQRS pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs)
+- [PostgreSQL Documentation - Write-Ahead Logging](https://www.postgresql.org/docs/current/wal-intro.html)
+
+
+

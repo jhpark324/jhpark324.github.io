@@ -1,4 +1,8 @@
 {
+  "architecture": 1,
+  "event-sourcing": 1,
+  "postgresql": 1,
+  "fastapi": 1,
   "cs": 1,
   "next-js": 6,
   "tailwind": 3,

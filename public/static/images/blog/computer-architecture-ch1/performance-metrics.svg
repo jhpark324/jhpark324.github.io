@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" fill="none">
+  <rect width="1200" height="680" rx="32" fill="#F8FAFC" />
+  <rect x="60" y="52" width="1080" height="576" rx="28" fill="white" stroke="#E2E8F0" stroke-width="3" />
+  <text x="110" y="120" fill="#0F172A" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">성능은 두 가지로 나눠서 본다</text>
+  <text x="110" y="160" fill="#475569" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="22">작업 하나의 속도와 단위 시간당 처리량은 분리해서 봐야 한다.</text>
+
+  <rect x="110" y="214" width="440" height="330" rx="28" fill="#DCFCE7" stroke="#22C55E" stroke-width="3" />
+  <text x="160" y="276" fill="#14532D" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">응답시간</text>
+  <text x="160" y="316" fill="#166534" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="22">작업 하나가 끝나는 데 걸리는 시간</text>
+  <circle cx="258" cy="416" r="78" fill="white" stroke="#22C55E" stroke-width="8" />
+  <path d="M258 416 L258 368" stroke="#22C55E" stroke-width="8" stroke-linecap="round" />
+  <path d="M258 416 L302 436" stroke="#22C55E" stroke-width="8" stroke-linecap="round" />
+  <circle cx="258" cy="416" r="12" fill="#22C55E" />
+  <text x="160" y="522" fill="#166534" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">예: 프로그램 하나를 실행하는 데</text>
+  <text x="160" y="550" fill="#166534" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">10초가 걸린다.</text>
+
+  <rect x="650" y="214" width="440" height="330" rx="28" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3" />
+  <text x="700" y="276" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">처리량</text>
+  <text x="700" y="316" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="22">단위 시간당 처리한 전체 작업량</text>
+  <rect x="742" y="374" width="90" height="72" rx="16" fill="white" stroke="#F59E0B" stroke-width="6" />
+  <rect x="856" y="374" width="90" height="72" rx="16" fill="white" stroke="#F59E0B" stroke-width="6" />
+  <rect x="970" y="374" width="90" height="72" rx="16" fill="white" stroke="#F59E0B" stroke-width="6" />
+  <path d="M706 410 L734 410" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" />
+  <path d="M832 410 L850 410" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" />
+  <path d="M946 410 L964 410" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" />
+  <text x="700" y="522" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">예: 서버가 1초 동안</text>
+  <text x="700" y="550" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">1,000개 요청을 처리한다.</text>
+
+  <rect x="270" y="570" width="660" height="52" rx="22" fill="#E2E8F0" />
+  <text x="314" y="603" fill="#334155" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="19">빠른 CPU는 응답시간 개선에, 프로세서 추가는 처리량 개선에 유리하다.</text>
+</svg>

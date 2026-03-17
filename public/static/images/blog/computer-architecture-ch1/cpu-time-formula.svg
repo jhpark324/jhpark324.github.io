@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+  <rect width="1200" height="760" rx="32" fill="#F8FAFC" />
+  <rect x="60" y="52" width="1080" height="656" rx="28" fill="white" stroke="#E2E8F0" stroke-width="3" />
+  <text x="110" y="118" fill="#0F172A" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">CPU 시간은 무엇으로 결정될까?</text>
+  <text x="110" y="158" fill="#475569" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="22">프로그램 특성, 명령어 비용, 클럭 속도가 함께 성능을 결정한다.</text>
+
+  <rect x="110" y="224" width="286" height="150" rx="24" fill="#DBEAFE" stroke="#60A5FA" stroke-width="3" />
+  <text x="178" y="286" fill="#1E3A8A" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="32" font-weight="700">명령어 수</text>
+  <text x="145" y="324" fill="#1E3A8A" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">알고리즘, 언어, 컴파일러,</text>
+  <text x="145" y="352" fill="#1E3A8A" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">ISA 선택에 영향을 받는다.</text>
+
+  <rect x="456" y="224" width="286" height="150" rx="24" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3" />
+  <text x="570" y="286" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="32" font-weight="700">CPI</text>
+  <text x="490" y="324" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">명령어 1개당 평균 몇 클럭이</text>
+  <text x="490" y="352" fill="#92400E" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">필요한지 나타내는 값이다.</text>
+
+  <rect x="802" y="224" width="286" height="150" rx="24" fill="#DCFCE7" stroke="#22C55E" stroke-width="3" />
+  <text x="854" y="286" fill="#166534" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="32" font-weight="700">클럭 주기</text>
+  <text x="842" y="324" fill="#166534" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">클럭 1번에 걸리는 시간이며</text>
+  <text x="842" y="352" fill="#166534" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="20">1 / 클럭 주파수와 같다.</text>
+
+  <path d="M254 374 L254 444" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" />
+  <path d="M254 430 L270 452 L286 430" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M600 374 L600 444" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" />
+  <path d="M600 430 L616 452 L632 430" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M946 374 L946 444" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" />
+  <path d="M946 430 L962 452 L978 430" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+
+  <rect x="140" y="492" width="920" height="134" rx="28" fill="#0F172A" />
+  <text x="204" y="565" fill="white" font-family="Malgun Gothic, Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">CPU 시간 = 명령어 수 × CPI × 클럭 주기</text>
+</svg>

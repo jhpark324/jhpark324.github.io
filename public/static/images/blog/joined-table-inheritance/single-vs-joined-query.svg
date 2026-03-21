@@ -1,0 +1,138 @@
+<svg width="960" height="860" viewBox="0 0 960 860" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="960" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF5" />
+      <stop offset="1" stop-color="#F8FAFC" />
+    </linearGradient>
+    <filter id="shadow2" x="0" y="0" width="960" height="860" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.08" />
+    </filter>
+  </defs>
+
+  <rect width="960" height="860" rx="28" fill="url(#bg2)" />
+
+  <text x="52" y="64" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="32" font-weight="700">
+    전략별 쿼리 경로
+  </text>
+  <text x="52" y="98" fill="#475569" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">
+    같은 ORM 코드처럼 보여도 DB가 실제로 읽고 쓰는 테이블 경로는 달라진다
+  </text>
+
+  <rect x="40" y="132" width="880" height="662" rx="26" fill="#FFFFFF" filter="url(#shadow2)" />
+
+  <rect x="212" y="160" width="280" height="44" rx="22" fill="#DBEAFE" />
+  <text x="294" y="188" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">
+    단일 테이블
+  </text>
+
+  <rect x="520" y="160" width="280" height="44" rx="22" fill="#DCFCE7" />
+  <text x="624" y="188" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">
+    Joined
+  </text>
+
+  <text x="72" y="248" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">
+    자식 타입 조회
+  </text>
+  <rect x="212" y="218" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="234" y="250" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    payment
+  </text>
+  <text x="234" y="276" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    where type = 'card'
+  </text>
+  <text x="234" y="326" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    JOIN 없이 payment만 읽는다
+  </text>
+
+  <rect x="520" y="218" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="542" y="250" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    payment + card_payment
+  </text>
+  <text x="542" y="276" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    id 기준 조인
+  </text>
+  <text x="542" y="326" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    payment와 자식 테이블을 JOIN한다
+  </text>
+
+  <line x1="72" y1="356" x2="888" y2="356" stroke="#E2E8F0" stroke-width="2" />
+
+  <text x="72" y="418" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">
+    부모 목록 조회
+  </text>
+  <rect x="212" y="388" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="234" y="420" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    select id, type, order_id, amount
+  </text>
+  <text x="234" y="446" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    from payment
+  </text>
+  <text x="234" y="496" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    단순 목록은 payment만 읽는다
+  </text>
+
+  <rect x="520" y="388" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="542" y="420" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    select id, type, order_id, amount
+  </text>
+  <text x="542" y="446" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    from payment
+  </text>
+  <text x="542" y="496" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    부모 컬럼만 읽으면 JOIN 없이 가능
+  </text>
+
+  <line x1="72" y1="526" x2="888" y2="526" stroke="#E2E8F0" stroke-width="2" />
+
+  <text x="72" y="588" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">
+    전체 상세 조회
+  </text>
+  <rect x="212" y="558" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="234" y="590" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    select * from payment
+  </text>
+  <text x="234" y="616" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    한 번의 조회로 끝남
+  </text>
+  <text x="234" y="666" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    다형 조회도 보통 한 테이블에서 끝난다
+  </text>
+
+  <rect x="520" y="558" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="542" y="590" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    payment + 모든 자식
+  </text>
+  <text x="542" y="616" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    with_polymorphic(...)
+  </text>
+  <text x="542" y="666" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    자식 타입 수만큼 JOIN 가능성이 생긴다
+  </text>
+
+  <line x1="72" y1="696" x2="888" y2="696" stroke="#E2E8F0" stroke-width="2" />
+
+  <text x="72" y="748" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">
+    카드 결제 생성
+  </text>
+  <rect x="212" y="718" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="234" y="750" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    insert into payment
+  </text>
+  <text x="234" y="776" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    1회
+  </text>
+  <text x="234" y="826" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    쓰기 경로가 짧다
+  </text>
+
+  <rect x="520" y="718" width="280" height="88" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="542" y="750" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    insert payment
+  </text>
+  <text x="542" y="776" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    + insert card_payment
+  </text>
+  <text x="542" y="826" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    부모와 자식에 나눠 저장한다
+  </text>
+</svg>

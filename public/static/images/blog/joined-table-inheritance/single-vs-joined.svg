@@ -1,0 +1,138 @@
+<svg width="960" height="980" viewBox="0 0 960 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="980" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC" />
+      <stop offset="1" stop-color="#FEF3C7" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="960" height="980" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.08" />
+    </filter>
+  </defs>
+
+  <rect width="960" height="980" rx="28" fill="url(#bg)" />
+
+  <text x="52" y="64" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="32" font-weight="700">
+    단일 테이블과 Joined 비교
+  </text>
+  <text x="52" y="98" fill="#475569" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">
+    같은 결제 도메인을 두 전략으로 저장했을 때 구조와 비용이 어떻게 달라지는지 정리
+  </text>
+
+  <rect x="40" y="132" width="880" height="344" rx="26" fill="#FFFFFF" filter="url(#shadow)" />
+  <rect x="40" y="516" width="880" height="404" rx="26" fill="#FFFFFF" filter="url(#shadow)" />
+
+  <rect x="68" y="158" width="152" height="40" rx="20" fill="#DBEAFE" />
+  <text x="95" y="184" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">
+    단일 테이블
+  </text>
+
+  <rect x="68" y="542" width="132" height="40" rx="20" fill="#DCFCE7" />
+  <text x="103" y="568" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">
+    Joined
+  </text>
+
+  <text x="68" y="232" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">
+    테이블 1개
+  </text>
+  <rect x="68" y="252" width="420" height="170" rx="22" fill="#EFF6FF" stroke="#60A5FA" stroke-width="2" />
+  <text x="92" y="288" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">
+    payment
+  </text>
+  <text x="92" y="322" fill="#1E3A8A" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16">
+    id, type, order_id, amount
+  </text>
+  <text x="92" y="348" fill="#1E3A8A" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16">
+    created_at
+  </text>
+  <text x="92" y="380" fill="#1E3A8A" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16">
+    card_last4, approval_code
+  </text>
+  <text x="92" y="406" fill="#1E3A8A" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16">
+    bank_name, depositor_name
+  </text>
+
+  <text x="530" y="232" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">
+    예시 데이터
+  </text>
+  <rect x="530" y="252" width="330" height="62" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="550" y="277" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="14">
+    card: 4242, APPROVED-9A3,
+  </text>
+  <text x="550" y="299" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="14">
+    NULL, NULL
+  </text>
+
+  <rect x="530" y="326" width="330" height="62" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="550" y="351" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="14">
+    bank: NULL, NULL,
+  </text>
+  <text x="550" y="373" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="14">
+    KakaoBank, Kim
+  </text>
+
+  <rect x="68" y="440" width="188" height="24" rx="12" fill="#DBEAFE" />
+  <text x="84" y="456" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    조회 단순, NULL 증가
+  </text>
+
+  <text x="68" y="616" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">
+    부모 + 자식 테이블
+  </text>
+  <rect x="68" y="636" width="380" height="106" rx="22" fill="#EFF6FF" stroke="#60A5FA" stroke-width="2" />
+  <text x="92" y="670" fill="#1D4ED8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">
+    payment
+  </text>
+  <text x="92" y="702" fill="#1E3A8A" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16">
+    id, type, order_id, amount
+  </text>
+  <text x="92" y="728" fill="#1E3A8A" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16">
+    created_at
+  </text>
+
+  <rect x="488" y="636" width="176" height="146" rx="22" fill="#DCFCE7" stroke="#4ADE80" stroke-width="2" />
+  <text x="510" y="670" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">
+    card_payment
+  </text>
+  <text x="510" y="700" fill="#166534" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    id -&gt; payment.id
+  </text>
+  <text x="510" y="726" fill="#166534" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    card_last4
+  </text>
+  <text x="510" y="752" fill="#166534" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    approval_code
+  </text>
+
+  <rect x="692" y="636" width="180" height="160" rx="22" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2" />
+  <text x="714" y="670" fill="#92400E" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">
+    bank_transfer
+  </text>
+  <text x="728" y="694" fill="#92400E" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">
+    _payment
+  </text>
+  <text x="714" y="724" fill="#92400E" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    id -&gt; payment.id
+  </text>
+  <text x="714" y="750" fill="#92400E" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    bank_name
+  </text>
+  <text x="714" y="776" fill="#92400E" font-family="ui-monospace, SFMono-Regular, monospace" font-size="15">
+    depositor_name
+  </text>
+
+  <text x="68" y="826" fill="#0F172A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">
+    예시 데이터
+  </text>
+  <rect x="68" y="846" width="380" height="62" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" />
+  <text x="88" y="871" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="14">
+    payment: (101, card, 15000)
+  </text>
+  <text x="88" y="893" fill="#334155" font-family="ui-monospace, SFMono-Regular, monospace" font-size="14">
+    card_payment: (101, 4242, ...)
+  </text>
+
+  <rect x="68" y="932" width="188" height="24" rx="12" fill="#DCFCE7" />
+  <text x="84" y="948" fill="#166534" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">
+    정규화, JOIN 필요
+  </text>
+</svg>

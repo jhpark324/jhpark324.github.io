@@ -1,0 +1,534 @@
+---
+title: '미들웨어란 무엇인가: FastAPI와 LangChain으로 이해하기'
+date: '2026-03-24'
+tags: ['fastapi', 'langchain', 'middleware', 'backend', 'ai']
+draft: true
+summary: '미들웨어의 핵심 개념을 먼저 정리하고, FastAPI의 HTTP/ASGI middleware와 LangChain agent middleware가 각각 어디에 끼어드는지 비교한다.'
+---
+
+<TOCInline toc={props.toc} exclude="이 글에서 정리할 질문" />
+
+FastAPI나 LangChain을 보다 보면 `middleware`라는 단어를 자주 만나게 된다.
+그런데 처음에는 이게 대체 뭔지 애매하다.
+
+- "중간에 끼는 코드" 같은 건 알겠는데 정확히 어디에 끼는가
+- 그냥 공통 함수랑 뭐가 다른가
+- 인증, 로깅, 추적, 가드레일 같은 것들은 왜 미들웨어로 빼는가
+- FastAPI의 미들웨어와 LangChain의 미들웨어는 같은 개념인가
+
+이 글은 이 질문들에 답하는 것을 목표로 한다.
+
+## 이 글에서 정리할 질문
+
+- 미들웨어는 정확히 무엇인가
+- 언제 helper나 service가 아니라 middleware로 두는가
+- FastAPI에서 middleware는 요청/응답 흐름의 어디에 있는가
+- LangChain에서 middleware는 어떤 실행 루프를 감싸는가
+- 두 프레임워크에서 같은 단어를 써도 왜 체감이 다른가
+
+## 1. 미들웨어는 "핵심 로직 앞뒤에 공통 동작을 끼워 넣는 계층"이다
+
+가장 단순하게 말하면, 미들웨어는 **핵심 로직이 실행되기 전과 후에 공통 동작을 넣는 계층**이다.
+
+예를 들어 이런 것들이 있다.
+
+- 요청 ID 생성
+- 접근 로그 기록
+- 인증 토큰 파싱
+- CORS 헤더 추가
+- 응답 압축
+- 처리 시간 측정
+- 모델 호출 전 프롬프트 보정
+- 툴 호출 전 승인 요청
+
+핵심은 "중간에 낀다"가 아니라, **여러 요청이나 여러 실행 경로에 공통으로 적용되는 관심사(cross-cutting concern)를 감싼다**는 점이다.
+
+텍스트로 그리면 대략 이런 구조다.
+
+```text
+입력
+  -> 미들웨어 A
+    -> 미들웨어 B
+      -> 핵심 로직
+    <- 미들웨어 B
+  <- 미들웨어 A
+출력
+```
+
+> [!NOTE]
+> 미들웨어는 핵심 로직을 대체하는 계층이 아니다.
+> 보통은 핵심 로직 바깥에서 공통 정책, 관측, 제어를 추가하는 계층에 가깝다.
+
+즉 미들웨어는 보통 아래 두 성질을 가진다.
+
+- 핵심 로직 "전후"를 감싼다
+- 여러 기능에 공통으로 적용된다
+
+### 데이터가 지나갈 때 무슨 일이 생기나
+
+미들웨어를 "중간에 낀다"는 말만으로 이해하면 추상적이다.
+실제로는 **입력 데이터나 실행 컨텍스트가 통과하면서 조금씩 보강되거나 검사된다**고 보는 편이 더 정확하다.
+
+| 구간           | 원래 있던 것                | 미들웨어가 개입하면 추가될 수 있는 것          |
+| -------------- | --------------------------- | ---------------------------------------------- |
+| 요청 진입 시점 | URL, headers, body          | request ID, 인증 정보 파싱 결과, trace context |
+| 핵심 로직 직전 | route/tool이 직접 받은 입력 | 권한 검사 결과, 공통 정책, 보정된 요청         |
+| 응답 직전      | 비즈니스 결과               | 보안 헤더, 처리 시간, 압축, 감사 로그          |
+| 실행 종료 시점 | 최종 결과                   | metrics, tracing span, usage log               |
+
+이 표가 중요한 이유는 하나다.
+미들웨어는 종종 **비즈니스 데이터를 직접 만들기보다, 비즈니스 데이터가 오가는 경로를 관리한다.**
+
+## 2. 모든 공통 코드가 미들웨어는 아니다
+
+이 부분에서 많이 헷갈린다.
+공통으로 쓰인다고 해서 전부 미들웨어는 아니다.
+
+예를 들어:
+
+- 주문 총액 계산 함수
+- 회원 등급 판별 로직
+- 포인트 적립 규칙
+
+이런 것은 여러 곳에서 재사용될 수 있어도 보통 미들웨어가 아니라 **도메인 로직**이다.
+핵심 비즈니스 규칙 자체이기 때문이다.
+
+반대로 아래는 미들웨어에 더 가깝다.
+
+- 모든 요청에 request ID를 넣는다
+- 모든 응답에 보안 헤더를 추가한다
+- 모든 에이전트 실행에서 토큰 사용량을 기록한다
+- 특정 툴 호출 전 사람 승인을 받는다
+
+실무에서는 아래 기준으로 보면 판단이 쉬워진다.
+
+| 질문                                               | 예라면 middleware 후보인가 |
+| -------------------------------------------------- | -------------------------- |
+| 여러 요청/실행 경로에 공통으로 적용되는가          | 그렇다                     |
+| 핵심 로직 전후를 감싸야 하는가                     | 그렇다                     |
+| 비즈니스 규칙보다 운영, 제어, 관측의 성격이 강한가 | 그렇다                     |
+| 순서가 중요한가                                    | 그렇다                     |
+
+반대로 "이 로직이 없으면 서비스 기능 자체가 성립하지 않는다"에 가깝다면 middleware보다 service/domain layer일 가능성이 크다.
+
+## 3. FastAPI에서 미들웨어는 요청/응답 체인을 감싼다
+
+FastAPI에서 미들웨어를 이해하려면 먼저 기준점을 명확히 해야 한다.
+
+FastAPI의 middleware는 기본적으로 **HTTP request가 들어와서 response가 나갈 때까지의 흐름**을 감싼다.
+
+조금 더 정확히 말하면 FastAPI는 Starlette 위에 만들어져 있고 ASGI 규격을 따르기 때문에, 실제 감각상으로는 **ASGI middleware**를 FastAPI 애플리케이션에 붙여 쓰는 구조에 가깝다.
+
+그래서 FastAPI에서 미들웨어는 이런 질문에 답하는 계층이다.
+
+- 요청이 라우트 함수에 도달하기 전에 무엇을 할 것인가
+- 라우트 함수가 만든 응답이 나가기 전에 무엇을 할 것인가
+- 모든 요청에 공통으로 어떤 정책을 강제할 것인가
+
+### FastAPI 미들웨어의 위치
+
+대략 흐름은 아래처럼 이해하면 된다.
+
+![FastAPI middleware pipeline](/static/images/blog/middleware/fastapi-middleware-pipeline.svg)
+
+_요청은 middleware stack을 지나 route handler로 들어가고, 응답은 같은 stack을 다시 통과하며 나온다._
+
+FastAPI에서 직접 커스텀 미들웨어를 만들 때는 보통 아래 형태를 쓴다.
+
+```python:main.py
+import time
+from uuid import uuid4
+
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+
+@app.middleware('http')
+async def add_request_context(request: Request, call_next):
+    request.state.request_id = str(uuid4())
+    started_at = time.perf_counter()
+
+    response = await call_next(request)
+
+    response.headers['X-Request-Id'] = request.state.request_id
+    response.headers['X-Process-Time'] = f'{time.perf_counter() - started_at:.6f}'
+    return response
+```
+
+이 미들웨어가 하는 일은 전형적이다.
+
+- 요청이 들어오면 request ID를 만든다
+- 핵심 로직을 실행시킨다
+- 응답이 나오면 처리 시간을 헤더에 넣는다
+
+이건 특정 엔드포인트의 비즈니스 로직이 아니라, **모든 요청을 감싸는 운영성 로직**이다.
+그래서 middleware에 잘 어울린다.
+
+### FastAPI 데이터 흐름 예시
+
+아래처럼 보면 middleware가 실제로 무엇을 바꾸는지 더 직관적이다.
+
+```text:fastapi-request-flow.txt
+Incoming request
+  GET /users
+  Authorization: Bearer eyJ...
+
+Middleware
+  - parse auth header
+  - request.state.user_id = "user-123"
+  - request.state.request_id = "req-9f1c"
+  - start timer
+
+Route handler
+  - read request.state.user_id
+  - load users from service
+  - return {"users": [...]}
+
+Outgoing response
+  200 OK
+  X-Request-Id: req-9f1c
+  X-Process-Time: 0.013421
+  body: {"users": [...]}
+```
+
+여기서 핵심은 route가 만든 비즈니스 결과는 `{"users": [...]}` 이지만,
+middleware는 그 바깥에서 다음 같은 것을 붙인다는 점이다.
+
+- 요청 추적 정보
+- 인증 파싱 결과
+- 처리 시간
+- 로깅과 metrics
+
+### FastAPI에서 자주 쓰는 middleware
+
+FastAPI에서 많이 보는 middleware는 대략 이런 것들이다.
+
+- `CORSMiddleware`
+- `HTTPSRedirectMiddleware`
+- `TrustedHostMiddleware`
+- `GZipMiddleware`
+
+이 목록만 봐도 감이 온다.
+대부분 "핵심 비즈니스 로직"이 아니라 **애플리케이션 전반의 정책과 전송 계층 제어**에 가깝다.
+
+### FastAPI에서 middleware 순서가 중요한 이유
+
+FastAPI의 미들웨어는 스택처럼 쌓인다.
+나중에 추가한 middleware가 바깥쪽을 감싼다.
+
+예를 들어:
+
+```python
+app.add_middleware(MiddlewareA)
+app.add_middleware(MiddlewareB)
+```
+
+실행 순서는 아래처럼 된다.
+
+- Request: `MiddlewareB -> MiddlewareA -> route`
+- Response: `route -> MiddlewareA -> MiddlewareB`
+
+즉 middleware는 단순 체크리스트가 아니라 **감싸는 순서 자체가 동작 의미**가 된다.
+로그, 인증, 에러 처리, CORS, 압축은 순서에 따라 결과가 달라질 수 있다.
+
+> [!WARNING]
+> FastAPI에서 middleware는 "어디에 두든 비슷하겠지"가 아니다.
+> 인증, 로깅, 예외 처리, 응답 변형은 순서에 따라 실제 결과가 달라질 수 있다.
+
+## 4. FastAPI에서 무엇을 middleware로 두고, 무엇을 두지 말아야 할까
+
+처음 공부할 때는 뭔가 공통이면 다 middleware에 넣고 싶어진다.
+그런데 그 기준이 흐려지면 오히려 코드가 읽기 어려워진다.
+
+FastAPI에서 middleware로 두기 좋은 것:
+
+- 요청 ID, trace ID 주입
+- 공통 접근 로그
+- CORS, host 검증, HTTPS 강제
+- 응답 압축
+- 공통 보안 헤더 추가
+- 아주 전역적인 인증/테넌트 식별 전처리
+
+FastAPI에서 middleware보다 다른 계층이 나은 것:
+
+- 특정 라우트에만 필요한 인증 검사
+- 현재 사용자 조회
+- DB 세션 주입
+- 입력 데이터 검증
+- 주문, 결제, 포인트 같은 도메인 규칙
+
+예를 들어 "현재 로그인 사용자"는 middleware보다 dependency가 더 잘 맞는 경우가 많다.
+왜냐하면 모든 요청이 아니라 **특정 라우트 단위로 명시적으로 연결하는 편이 읽기 쉽고 테스트하기 쉽기 때문**이다.
+
+즉 FastAPI에서는 middleware를 "전역 공통 흐름 제어"에 두고, 도메인 규칙은 route/service/dependency 쪽에 두는 편이 보통 더 낫다.
+
+## 5. LangChain에서 미들웨어는 HTTP가 아니라 agent 실행 루프를 감싼다
+
+여기서 중요한 구분이 하나 있다.
+
+**LangChain의 middleware는 FastAPI의 request/response middleware와 같은 위치에 있지 않다.**
+
+FastAPI는 HTTP 애플리케이션 프레임워크다.
+반면 LangChain에서 공식적으로 말하는 middleware는 현재 기준으로 **agent execution을 제어하는 계층**에 가깝다[^langchain-agent-middleware].
+
+즉 LangChain에서 middleware가 감싸는 것은 보통 이런 루프다.
+
+![LangChain agent middleware pipeline](/static/images/blog/middleware/langchain-agent-middleware-pipeline.svg)
+
+_LangChain middleware는 request/response보다 agent loop의 각 경계에 개입한다._
+
+그리고 middleware는 이 루프의 앞뒤나 중간 지점에 개입한다.
+
+- 모델 호출 전 상태를 바꾼다
+- 모델 호출 자체를 감싼다
+- 모델 응답 뒤에 후처리를 한다
+- 툴 호출을 감싼다
+- 에이전트 시작/종료 시점을 감싼다
+
+즉 LangChain에서 middleware는 "HTTP 요청을 감싸는 레이어"가 아니라 **에이전트의 판단과 실행 단계를 감싸는 제어 레이어**다.
+
+## 6. LangChain에서 middleware로 할 수 있는 일
+
+공식 문서 기준으로 LangChain middleware는 대략 이런 작업에 쓰인다.
+
+- 로깅, 분석, 디버깅
+- 프롬프트 변형
+- 툴 선택 제어
+- retries, fallbacks
+- rate limits
+- guardrails
+- PII detection
+- human-in-the-loop
+- 긴 대화의 요약 관리
+
+이 목록을 보면 FastAPI와 비슷한 점과 다른 점이 같이 보인다.
+
+비슷한 점:
+
+- 핵심 로직 전후에 공통 정책을 넣는다
+- 관측, 제어, 정책 적용에 강하다
+
+다른 점:
+
+- FastAPI는 HTTP 요청/응답을 감싼다
+- LangChain은 agent의 모델/툴 실행 루프를 감싼다
+
+### LangChain built-in middleware 예시
+
+예를 들어 긴 대화에서 오래된 메시지를 자동 요약해 컨텍스트를 관리하는 middleware를 붙일 수 있다.
+
+```python:agent.py
+from langchain.agents import create_agent
+from langchain.agents.middleware import SummarizationMiddleware
+
+agent = create_agent(
+    model='gpt-4.1',
+    tools=[search_docs, calculator],
+    middleware=[
+        SummarizationMiddleware(
+            model='gpt-4.1-mini',
+            trigger=('tokens', 4000),
+            keep=('messages', 20),
+        ),
+    ],
+)
+```
+
+이 코드는 특정 tool의 비즈니스 로직을 바꾸는 게 아니다.
+대신 **agent가 실행되는 방식 자체**를 조정한다.
+
+즉:
+
+- 입력이 길어졌을 때
+- 언제 요약을 돌릴지 결정하고
+- 얼마나 최근 맥락을 남길지 정한다
+
+이건 agent 전반에 걸친 실행 정책이므로 middleware에 잘 맞는다.
+
+### LangChain 데이터 흐름 예시
+
+LangChain에서도 middleware는 "모델이 무슨 답을 할지 직접 만들기"보다,
+그 답이 만들어지는 경로를 제어하는 쪽에 가깝다.
+
+```text:langchain-agent-flow.txt
+Initial state
+  messages = [HumanMessage("사내 정책 문서를 찾아서 요약해줘")]
+
+before_model middleware
+  - add system policy
+  - attach tenant metadata
+
+model
+  - decides to call search_docs(query="사내 정책 문서")
+
+wrap_tool_call middleware
+  - log tool name and args
+  - optionally request human approval
+
+tool execution
+  - returns matching policy documents
+
+after_model middleware
+  - validate final answer
+  - redact sensitive output if needed
+
+Final answer
+  - summarized result for the user
+```
+
+즉 LangChain middleware가 다루는 것은 보통 이런 것들이다.
+
+- 어떤 상태를 모델 호출 전에 주입할지
+- tool 호출을 허용할지 막을지
+- 최종 응답을 그대로 보낼지 후처리할지
+- 실행 전체를 어떻게 추적할지
+
+### LangChain custom middleware 예시
+
+직접 tool 호출을 감시하는 middleware도 만들 수 있다.
+
+```python:tool_monitoring.py
+from typing import Callable
+
+from langchain.agents.middleware import wrap_tool_call
+from langchain.messages import ToolMessage
+from langchain.tools.tool_node import ToolCallRequest
+from langgraph.types import Command
+
+
+@wrap_tool_call
+def monitor_tool(
+    request: ToolCallRequest,
+    handler: Callable[[ToolCallRequest], ToolMessage | Command],
+) -> ToolMessage | Command:
+    print(f"executing tool: {request.tool_call['name']}")
+    return handler(request)
+```
+
+이런 코드는 tool 내부의 비즈니스 로직을 건드리지 않고도, **모든 tool 호출에 공통 관측 로직**을 붙일 수 있다.
+
+### LangChain에서 middleware hooks는 무엇을 의미하나
+
+LangChain의 custom middleware 문서를 보면 대략 이런 훅들이 나온다.
+
+- `before_agent`
+- `before_model`
+- `wrap_model_call`
+- `after_model`
+- `wrap_tool_call`
+- `after_agent`
+
+이 이름만 봐도 middleware가 어디에 끼어드는지 보인다.
+결국 LangChain middleware는 "에이전트 실행 그래프의 경계면"에 개입하는 도구라고 보면 된다.
+
+> [!TIP]
+> LangChain에서는 tool이 "무엇을 할지"를 담당하고, middleware가 "그 실행을 어떤 규칙으로 감쌀지"를 담당한다고 기억하면 덜 헷갈린다.
+
+## 7. LangChain에서는 모든 걸 middleware로 보면 오해가 생긴다
+
+이 부분도 중요하다.
+
+LangChain에서 middleware가 강력하다고 해서 모든 로직을 middleware로 넣는 것은 좋은 설계가 아니다.
+
+LangChain에서 middleware로 두기 좋은 것:
+
+- 모델 호출 전 시스템 문맥 보정
+- 툴 호출 횟수 제한
+- 사람 승인 절차
+- 토큰 사용량 추적
+- 재시도와 fallback
+- 민감정보 탐지
+
+LangChain에서 middleware보다 다른 계층이 나은 것:
+
+- 실제 외부 시스템 호출 자체
+- 도메인 계산 로직
+- 특정 툴 하나만의 내부 구현
+- 에이전트가 아니라 애플리케이션 서비스 계층에서 처리해야 할 비즈니스 규칙
+
+예를 들어 "이메일 보내기"는 middleware가 아니라 tool에 들어갈 일이다.
+반면 "이메일 보내기 tool은 사람 승인 후에만 실행"은 middleware에 더 가깝다.
+
+이 차이를 잡아야 한다.
+
+- tool은 **무엇을 실행하는가**
+- middleware는 **그 실행을 어떤 정책으로 감쌀 것인가**
+
+## 8. FastAPI와 LangChain의 middleware를 한 표로 비교해보자
+
+| 항목        | FastAPI                                     | LangChain                                                  |
+| ----------- | ------------------------------------------- | ---------------------------------------------------------- |
+| 감싸는 대상 | HTTP request/response 흐름                  | agent 실행 루프                                            |
+| 핵심 경계   | 라우트 함수 전후                            | 모델 호출, 툴 호출, agent 시작/종료                        |
+| 대표 용도   | CORS, 로깅, 압축, 보안 헤더, request ID     | guardrails, retries, human approval, 요약, tool monitoring |
+| 주 관심사   | 웹 요청 처리 전역 정책                      | 에이전트 실행 전역 정책                                    |
+| 흔한 오해   | 인증/비즈니스 로직을 전부 middleware에 넣음 | tool 내부 구현까지 middleware로 넣으려 함                  |
+
+즉, 두 프레임워크는 같은 단어를 쓰지만 "중간"의 위치가 다르다.
+
+- FastAPI에서 중간은 request와 route 사이
+- LangChain에서 중간은 model/tool/agent loop 사이
+
+그래서 middleware를 이해할 때는 단어 자체보다 **무엇의 실행 경로를 감싸는가**를 먼저 봐야 한다.
+
+## 9. 언제 middleware를 쓰는가: 실무 기준
+
+실무에서는 아래 질문으로 결정하면 된다.
+
+### middleware가 잘 맞는 경우
+
+- 여러 엔드포인트나 여러 agent 실행 경로에 공통 적용된다
+- 핵심 로직 앞뒤에서 동작해야 한다
+- 순서가 중요하다
+- 정책, 관측, 제어 성격이 강하다
+- 핵심 비즈니스 로직과 분리하는 편이 읽기 쉽다
+
+### middleware가 과한 경우
+
+- 특정 기능 하나에만 필요하다
+- 도메인 규칙 자체다
+- route나 tool 함수 내부에 두는 편이 더 직접적이다
+- dependency, service, exception handler가 더 자연스럽다
+
+짧게 요약하면 이렇다.
+
+**"서비스가 무엇을 하는지"는 도메인 로직에 두고, "그 서비스가 실행될 때 공통으로 어떤 규칙을 강제할지"는 middleware로 뺀다.**
+
+## 10. 내 기준으로 정리하면 이렇게 기억하면 된다
+
+처음에는 아래처럼 기억하면 충분하다.
+
+- FastAPI middleware: 모든 HTTP 요청/응답을 감싸는 공통 레이어
+- LangChain middleware: 모든 agent 실행 단계의 경계에 공통 정책을 넣는 레이어
+- 둘 다 공통 관심사를 핵심 로직 바깥에서 제어하기 위한 장치
+- 둘 다 도메인 로직 저장소로 쓰면 설계가 흐려진다
+
+이 관점을 잡고 나면 middleware라는 단어가 훨씬 덜 추상적으로 느껴진다.
+
+### 읽고 나서 체크해볼 질문
+
+- [ ] 이 로직은 여러 요청이나 여러 agent 실행 경로에 공통으로 적용되는가
+- [ ] 이 로직은 핵심 비즈니스 규칙이 아니라 정책, 관측, 제어 성격인가
+- [ ] 실행 순서가 중요해서 앞뒤를 감싸는 구조가 필요한가
+- [ ] route, dependency, service, tool 내부에 두는 편이 더 직접적이지는 않은가
+
+## 11. 결론
+
+미들웨어는 "그냥 중간에 끼는 코드"가 아니다.
+정확히는 **핵심 실행 경로를 감싸면서 공통 정책과 관측 로직을 적용하는 계층**이다.
+
+FastAPI에서는 request/response 체인을 감싸고,
+LangChain에서는 agent의 model/tool 실행 루프를 감싼다.
+
+그래서 같은 middleware라는 단어를 봐도 먼저 물어봐야 한다.
+
+- 이 프레임워크에서 핵심 실행 경로는 무엇인가
+- middleware는 그 경로의 앞뒤 어느 지점을 감싸는가
+- 이 로직은 비즈니스 규칙인가, 아니면 공통 정책인가
+
+이 세 질문에 답할 수 있으면 middleware를 억지로 외우지 않아도 된다.
+
+FastAPI의 실행 모델 자체가 더 궁금하다면 이전 글인 [FastAPI에서 동기와 비동기, 이벤트 루프, Blocking을 정확히 이해하기](/blog/fastapi-sync-vs-async-event-loop-blocking)와 함께 보면 흐름이 더 잘 연결된다.
+
+[^langchain-agent-middleware]: 이 글에서 설명하는 LangChain middleware는 현재 공식 문서의 agent middleware 개념을 기준으로 한다. LangChain API는 비교적 빠르게 바뀌므로 세부 훅 이름이나 제공 기능은 버전에 따라 달라질 수 있다.

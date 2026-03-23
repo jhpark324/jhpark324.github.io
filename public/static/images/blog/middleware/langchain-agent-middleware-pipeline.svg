@@ -1,0 +1,54 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="360" rx="24" fill="#FAFAF9"/>
+  <text x="60" y="46" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="28" font-weight="700" fill="#111827">LangChain 에이전트 미들웨어 파이프라인</text>
+  <text x="60" y="74" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="16" fill="#4B5563">미들웨어 훅은 HTTP 자체보다 에이전트 루프를 감싼다. 모델 호출, 툴 호출, 에이전트 경계에 개입한다.</text>
+
+  <rect x="60" y="120" width="160" height="72" rx="14" fill="#DBEAFE" stroke="#93C5FD" stroke-width="2"/>
+  <text x="140" y="154" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#1E3A8A">사용자 입력</text>
+  <text x="140" y="176" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#1D4ED8">메시지</text>
+
+  <rect x="280" y="120" width="180" height="72" rx="14" fill="#DCFCE7" stroke="#86EFAC" stroke-width="2"/>
+  <text x="370" y="150" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#166534">모델 호출 전</text>
+  <text x="370" y="172" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#15803D">상태 갱신</text>
+
+  <rect x="520" y="120" width="160" height="72" rx="14" fill="#FDE68A" stroke="#FBBF24" stroke-width="2"/>
+  <text x="600" y="154" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#92400E">모델</text>
+  <text x="600" y="176" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#B45309">추론 / 결정</text>
+
+  <rect x="740" y="120" width="190" height="72" rx="14" fill="#FCE7F3" stroke="#F9A8D4" stroke-width="2"/>
+  <text x="835" y="150" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#9D174D">툴 호출 래퍼</text>
+  <text x="835" y="172" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#BE185D">정책 / 승인</text>
+
+  <rect x="980" y="120" width="150" height="72" rx="14" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="2"/>
+  <text x="1055" y="154" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#6D28D9">툴</text>
+  <text x="1055" y="176" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#7C3AED">실행</text>
+
+  <path d="M220 156H266" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <path d="M258 149L272 156L258 163" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M460 156H506" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <path d="M498 149L512 156L498 163" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M680 156H726" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <path d="M718 149L732 156L718 163" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M930 156H966" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <path d="M958 149L972 156L958 163" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="520" y="256" width="160" height="72" rx="14" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="2"/>
+  <text x="600" y="286" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#374151">모델 호출 후</text>
+  <text x="600" y="308" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#4B5563">검증 / 민감정보 가리기</text>
+
+  <rect x="820" y="256" width="220" height="72" rx="14" fill="#DBEAFE" stroke="#93C5FD" stroke-width="2"/>
+  <text x="930" y="286" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#1E3A8A">최종 응답</text>
+  <text x="930" y="308" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#1D4ED8">사용자에게 반환</text>
+
+  <path d="M1055 202V230H600V208" stroke="#6B7280" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M607 216L600 202L593 216" fill="none" stroke="#6B7280" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M680 292H806" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <path d="M798 285L812 292L798 299" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="60" y="230" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="15" fill="#4B5563">루프 메모:</text>
+  <text x="145" y="230" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="15" fill="#4B5563">툴 실행 결과는 보통 다시 모델로 돌아가고, 그 뒤 미들웨어가 최종 응답을 검사할 수 있다.</text>
+</svg>

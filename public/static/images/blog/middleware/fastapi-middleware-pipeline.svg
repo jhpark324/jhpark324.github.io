@@ -1,0 +1,44 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="320" rx="24" fill="#F8FAFC"/>
+  <text x="60" y="46" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="28" font-weight="700" fill="#0F172A">FastAPI 미들웨어 파이프라인</text>
+  <text x="60" y="74" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="16" fill="#475569">요청은 라우트에 도달하기 전 미들웨어 스택을 지나고, 응답은 같은 스택을 다시 통과해 나온다.</text>
+
+  <rect x="60" y="110" width="170" height="72" rx="14" fill="#DBEAFE" stroke="#93C5FD" stroke-width="2"/>
+  <text x="145" y="144" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#1E3A8A">클라이언트 요청</text>
+  <text x="145" y="166" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#1D4ED8">헤더 / 바디</text>
+
+  <rect x="300" y="98" width="270" height="96" rx="16" fill="#DCFCE7" stroke="#86EFAC" stroke-width="2"/>
+  <text x="435" y="132" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="22" font-weight="700" fill="#166534">미들웨어 스택</text>
+  <text x="435" y="155" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#15803D">인증 정보 파싱</text>
+  <text x="435" y="176" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#15803D">request_id 설정</text>
+  <text x="435" y="197" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#15803D">타이머 시작</text>
+
+  <rect x="640" y="110" width="200" height="72" rx="14" fill="#FDE68A" stroke="#FBBF24" stroke-width="2"/>
+  <text x="740" y="144" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#92400E">라우트 핸들러</text>
+  <text x="740" y="166" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#B45309">비즈니스 로직</text>
+
+  <rect x="910" y="110" width="230" height="72" rx="14" fill="#FCE7F3" stroke="#F9A8D4" stroke-width="2"/>
+  <text x="1025" y="144" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="700" fill="#9D174D">클라이언트 응답</text>
+  <text x="1025" y="166" text-anchor="middle" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="14" fill="#BE185D">json + 헤더</text>
+
+  <path d="M230 146H286" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+  <path d="M278 139L292 146L278 153" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M570 146H626" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+  <path d="M618 139L632 146L618 153" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M840 146H896" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+  <path d="M888 139L902 146L888 153" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M1025 212V244H740V194" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M747 202L740 188L733 202" fill="none" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M740 244H435V194" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M442 202L435 188L428 202" fill="none" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M435 244H145V194" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M152 202L145 188L138 202" fill="none" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="88" y="274" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="15" fill="#475569">응답 경로:</text>
+  <text x="175" y="274" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="15" fill="#475569">헤더 추가, 로그 기록, 메트릭 수집, 응답 압축</text>
+</svg>
